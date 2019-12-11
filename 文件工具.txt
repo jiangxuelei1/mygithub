@@ -1,0 +1,153 @@
+package com.onego.robot.facecamera.util;
+
+import android.os.Environment;
+import android.os.StatFs;
+import android.text.TextUtils;
+import android.util.Log;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+/**
+ *
+ * Created by jxl on 2018/5/25.
+ */
+
+public class FileTools {
+
+    private final static String TAG = "facecamera";
+
+    private static final int SDCARD_LIMIT = 800;
+    private static final int TFCARD_LIMIT = 50;
+
+
+    /**
+     * 获得sd卡剩余容量，即可用大小
+     * 1、无外置tf卡时，判断系统的SDCard的容量是否可用；
+     * 2、有外置tf卡时，判断tf卡容量是否可用；
+     * 3、如果不可用，重复1
+     *
+     * @return MB
+     */
+    public static boolean getSDAvailable() {
+        String tfPath = getExternalSdCardFile();
+        if (TextUtils.isEmpty(tfPath)) {
+            Log.i(TAG, "TF card not exists");
+            return getSDAvailableSize() >= SDCARD_LIMIT;
+        } else {
+            StatFs stat = new StatFs(tfPath);
+            long availableBlocks = stat.getAvailableBytes();
+            Log.d("facecamera", "availableBlocks = " + availableBlocks);
+            if ((availableBlocks >> 20) > TFCARD_LIMIT) {
+                Log.i(TAG, "TF card exists, availableSize > TFCARD_LIMIT");
+                return true;
+            } else {
+                Log.i(TAG, "TF card exists, availableSize <= TFCARD_LIMIT, judge SD card size");
+                return getSDAvailableSize() >= SDCARD_LIMIT;
+            }
+        }
+    }
+
+    private static long getSDAvailableSize() {
+        File path = Environment.getExternalStorageDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long availableBlocks = stat.getAvailableBytes();
+        Log.d(TAG, "SDavailableSize = " + availableBlocks);
+        return availableBlocks >> 20;
+    }
+
+    public static String getExternalSdCardFile() {
+        File storage = new File("/storage");
+        String tfPath = "";
+        if (storage.exists()) {
+            File[] files = storage.listFiles();
+            for (File file : files) {
+                if (file.exists()) {
+                    try {
+                        if (Environment.isExternalStorageRemovable(file)) {
+                            // storage is removable
+                            tfPath = file.getAbsolutePath();
+                            break;
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, e.toString());
+                    }
+                }
+            }
+        }
+        return tfPath;
+    }
+
+    /**
+     *
+     * @return picture file
+     */
+    public static File getOutputMediaFile() {
+        return getOutputMediaFile(0);
+    }
+
+    /**
+     *
+     * @param index
+     *          1:video
+     *          other:pic
+     * @return
+     */
+    public static File getOutputMediaFile(int index) {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+        File mediaStorageDir = null;
+        String tfPath = getExternalSdCardFile();
+        if (TextUtils.isEmpty(tfPath)) {
+            Log.i(TAG, "tfPath is null!");
+            String status = Environment.getExternalStorageState();
+            if (Environment.MEDIA_MOUNTED.equals(status)) {
+                mediaStorageDir = new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera");
+                if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()) {
+                    Log.e(TAG, "failed to create camera directory on device");
+                    return null;
+                }
+            } else {
+                Log.e(TAG, "Environment.getExternalStorageState() is not mounted");
+                return null;
+            }
+        } else {
+            long availableBlocks = new StatFs(tfPath).getAvailableBytes();
+            Log.i(TAG, "tf availableBlocks = " + availableBlocks);
+            if ((availableBlocks >> 20) > TFCARD_LIMIT) {
+                Log.i(TAG, "TF card exists, availableSize > TFCARD_LIMIT");
+                mediaStorageDir = new File(tfPath + "/DCIM/Camera");
+                Log.i(TAG, "tfPath not null, mediaStorageDir = " + mediaStorageDir.getAbsolutePath());
+                if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()) {
+                    Log.e(TAG, "failed to create camera directory on tf card!");
+                    return null;
+                }
+            } else {
+                Log.i(TAG, "TF card exists, availableSize <= TFCARD_LIMIT, use SDcard");
+                String status = Environment.getExternalStorageState();
+                if (Environment.MEDIA_MOUNTED.equals(status)) {
+                    mediaStorageDir = new File(Environment.getExternalStorageDirectory().getPath() + "/DCIM/Camera");
+                    if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()) {
+                        Log.e(TAG, "failed to create camera directory on device");
+                        return null;
+                    }
+                } else {
+                    Log.e(TAG, "Environment.getExternalStorageState() is not mounted");
+                    return null;
+                }
+            }
+        }
+        if (mediaStorageDir == null) {
+            Log.e(TAG, "camera directory is null!");
+            return null;
+        }
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINESE).format(new Date());
+        if (index == 1) {
+            return new File(mediaStorageDir.getPath() + File.separator + "VID_" + timeStamp + ".mp4");
+        }
+        return new File(mediaStorageDir.getPath() + File.separator + "IMG_" + timeStamp + ".jpg");
+    }
+}

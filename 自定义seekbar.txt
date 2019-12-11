@@ -1,0 +1,55 @@
+
+
+<SeekBar
+	android:id="@+id/safeRadiusSb"
+	android:layout_width="260dp"
+	android:layout_height="wrap_content"
+	android:paddingLeft="10dp"	//thumb尺寸比较大时，进度条两边各留出一定的空白，使thumb能完全显示
+	android:paddingRight="10dp"
+	android:layout_gravity="center_vertical"
+	android:minHeight="6dp"		//控制进度条的高度
+	android:maxHeight="6dp"		//控制进度条的高度
+	android:progressDrawable="@drawable/seekbar_drawable"	//进度条背景及进度
+	android:thumb="@drawable/seekbar_thumb"	//thumb
+	android:background="@null"
+	/>
+	
+	
+seekbar_drawable.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background"
+        android:drawable="@drawable/seekbar_bg" >	//进度条的背景，可以是.9
+    </item>
+    <item android:id="@android:id/progress">
+        <scale android:drawable="@drawable/seekbar_pg"	//进度条的进度，可以是.9，要与上面的背景保持高度一致，如果两端是半圆，则半径也要保持一致
+            android:scaleWidth="100%" />
+    </item>
+</layer-list>
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@*android:id/background">
+        <shape>
+            <solid android:color="#ff51495e" />
+        </shape>
+    </item>
+    <item android:id="@*android:id/secondaryProgress">
+        <clip>
+            <shape>
+                <solid android:color="#ff51495e" />
+            </shape>
+        </clip>
+    </item>
+    <item android:id="@*android:id/progress">
+        <clip>
+            <shape>
+                <solid android:color="#ff996dfe" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

@@ -1,0 +1,71 @@
+
+
+private long firstTime = 0;
+
+@Override
+public void onClick(View v) {
+	long secondTime = System.currentTimeMillis();
+        if (secondTime - firstTime > ParameterConstants.CLICK_TIME_INTERVAL) {
+            firstTime = secondTime;
+        } else {
+            Log.i(TAG, "click time interval < $CLICK_TIME_INTERVAL");
+            return;
+        }
+	switch (v.getId()) {
+		case R.id.baby_top_layout:
+			...
+			break;
+	}
+}
+
+
+
+package com.onego.robot.widget;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.widget.RelativeLayout;
+
+/**
+ * 可以屏蔽子控件点击事件的布局，用于防止界面响应点击事件后再被误点
+ * Created by jxl on 2016/4/18.
+ */
+public class ClickableRelativeLayout  extends RelativeLayout{
+
+    //子控件是否可以接受点击事件
+    private boolean childClickable = true;
+
+    public ClickableRelativeLayout(Context context) {
+        super(context);
+    }
+
+    public ClickableRelativeLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public ClickableRelativeLayout(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        //返回true则拦截子控件所有点击事件，如果childclickable为true，则需返回false
+        return !childClickable;
+    }
+
+    public void setChildClickable(boolean clickable) {
+        childClickable = clickable;
+    }
+
+}
+
+/**
+ * 设置界面是否可以点击
+ * @param flag :true 可点击
+ *             false 不可点击
+ */
+public void setButtonClick(boolean flag) {
+	ClickableRelativeLayout menuLayout = (ClickableRelativeLayout) findViewById(R.id.menu_layout);
+	menuLayout.setChildClickable(flag);
+}

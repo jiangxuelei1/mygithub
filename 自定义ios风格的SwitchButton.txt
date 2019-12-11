@@ -1,0 +1,82 @@
+
+
+<com.smartalarm.widget.MySwitch
+        android:id="@+id/my_item_switch"
+        android:layout_width="54dp"//宽度为背景条的宽度
+        android:layout_height="27dp"//高度为背景条的高度
+        app:layout_constraintTop_toTopOf="@id/my_item_icon"
+        app:layout_constraintBottom_toBottomOf="@id/my_item_icon"
+        app:layout_constraintRight_toRightOf="parent"
+        android:textOff=""
+        android:textOn=""
+        android:thumb="@drawable/switch_thumb"
+        android:track="@drawable/switch_track"
+        android:switchMinWidth="54dp"//宽度为背景条的宽度
+        android:thumbTextPadding="13dp"//圆点宽度的一半
+    />
+	
+圆点宽度为背景条的一半，高度相等
+	
+switch_thumb.xml	
+<?xml version="1.0" encoding="utf-8"?><!-- 设置按钮在不同状态下的时候，按钮不同的颜色 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:drawable="@drawable/switch_thumb_on_1" android:state_checked="true" />//白色圆点
+    <item android:drawable="@drawable/switch_thumb_off_1" />//灰色圆点
+
+</selector>
+
+
+
+switch_track.xml
+<?xml version="1.0" encoding="utf-8"?><!-- 控制Switch在不同状态下，底下下滑条的颜色 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:drawable="@drawable/switch_track_on_1" android:state_checked="true" />//蓝色背景条
+    <item android:drawable="@drawable/switch_track_off_1" />//白色背景条
+
+</selector>
+
+
+
+
+package com.smartalarm.widget;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Switch;
+
+public class MySwitch extends Switch implements View.OnTouchListener {
+
+    public MySwitch(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        setOnTouchListener(this);
+    }
+
+    @Override
+    public boolean onTouch(View view, MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_UP) {
+            // 解决Switch滑块拖到中间停住问题
+            resetChecked();
+        }
+        return false;
+    }
+
+    /**
+     * 当卡住的时候，执行
+     */
+    private void resetChecked() {
+        removeCallbacks(mCheckRun);
+        postDelayed(mCheckRun, 200);
+    }
+
+    private Runnable mCheckRun = new Runnable() {
+
+        @Override
+        public void run() {
+            setChecked(isChecked());
+        }
+    };
+}

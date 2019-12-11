@@ -1,0 +1,74 @@
+java:
+public MyHandler handler = new MyHandler(this);
+
+private static class MyHandler extends Handler {
+	WeakReference<MainActivity> context;
+
+	MyHandler(MainActivity context) {
+		this.context = new WeakReference<MainActivity>(context);
+	}
+
+	@Override
+	public void handleMessage(Message msg) {
+		MainActivity mainActivity = context.get();
+		String TAG = "MainActivity";
+		if (null == mainActivity) {
+			Log.e(TAG, "context.get() is null!");
+			return;
+		}
+		switch (msg.what) {
+			case 0x101:
+				mainActivity.showWatchData(DataManager.instance().getCurrentDevice());
+				break;
+				бнбн
+			default:
+				break;
+		}
+	}
+}
+
+
+handler.obtainMessage(0x105).sendToTarget();
+
+
+?????????????,??MainActivity???????
+
+
+
+
+Kotlin:
+
+companion object {
+
+        private const val MSG_GET_MSC_SUC = 101
+        private const val MSG_GET_MSC_FAI = MSG_GET_MSC_SUC + 1
+        private const val MSG_BIND_SUC = MSG_GET_MSC_FAI + 1
+        private const val MSG_BIND_FAI = MSG_BIND_SUC + 1
+    }
+
+
+
+private val handler = MyHandler(this)
+
+private class MyHandler internal constructor(context: BindDeviceActivity) : Handler() {
+	internal var context: WeakReference<BindDeviceActivity> = WeakReference(context)
+
+	override fun handleMessage(msg: Message?) {
+		if (msg == null) {
+			return
+		}
+		val activity = context.get() ?: return
+		when (msg.what) {
+			MSG_GET_MSC_SUC -> {
+				Log.i(activity.TAG, "MSG_GET_MSC_SUC, deviceState = ${activity.deviceState}")
+				val obj = msg.obj ?: return
+				if (activity.deviceState == 1) {
+					activity.bindDevice(obj.toString())
+				} else {
+					activity.startActivity(Intent(activity, HomeActivity::class.java))
+				}
+			}
+			бнбн
+		}
+	}
+}

@@ -1,0 +1,234 @@
+使用Dialog:
+
+public class LoadingDialog  extends Dialog {
+
+    public LoadingDialog(Context context) {
+        super(context, R.style.BaseDialogStyle);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.load_dialog_layout);
+        //点击返回键和外部都不可取消
+        setCancelable(false);
+        //仅点击外部不可取消
+        setCanceledOnTouchOutside(false);
+    }
+}
+
+
+R.style.BaseDialogStyle
+
+<style name="BaseDialogStyle" parent="@android:style/Theme.Dialog">
+	<item name="android:windowFrame">@null</item>
+	<!--边框-->
+	<item name="android:windowIsFloating">true</item>
+	<!--是否浮现在activity之上-->
+	<item name="android:windowIsTranslucent">false</item>
+	<!--半透明-->
+	<item name="android:windowNoTitle">true</item>
+	<!--无标题-->
+	<item name="android:windowBackground">@android:color/transparent</item>
+	<!--背景透明-->
+	<item name="android:backgroundDimEnabled">true</item>
+	<!--模糊-->
+</style>
+
+
+使用DialogFragment:
+
+package com.smartalarm.view;
+
+import android.app.DialogFragment;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+
+import com.smartalarm.MyApplication;
+import com.smartalarm.R;
+import com.smartalarm.tools.DisplayTools;
+
+/**
+ *
+ * Created by jxl on 2018/7/16.
+ */
+
+public class BaseBottomDialog extends DialogFragment implements View.OnClickListener {
+
+    protected final String TAG = getClass().getSimpleName();
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        Log.i(TAG, "onAttach: ");
+    }
+
+    public void setWindow() {
+        getDialog().requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));//设置背景透明
+        getDialog().getWindow().setWindowAnimations(R.style.bottom_menu_animation);//添加一组进出动画
+    }
+
+    public void windowsLayout(float height) {
+        //移动弹出菜单到底部
+        WindowManager.LayoutParams wlp = getDialog().getWindow().getAttributes();
+        wlp.gravity = Gravity.BOTTOM;
+        wlp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        wlp.height = DisplayTools.Companion.dp2px(MyApplication.getInstance(), height);
+        getDialog().getWindow().setAttributes(wlp);
+    }
+
+    @Override
+    public void onClick(View v) {
+
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        Log.i(TAG, "onDetach: ");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Log.i(TAG, "onDestroyView: ");
+
+    }
+}
+
+
+package com.smartalarm.settings;
+
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+
+import com.smartalarm.R;
+import com.smartalarm.tools.CommonUtil;
+import com.smartalarm.tools.ToastUtils;
+import com.smartalarm.view.BaseBottomDialog;
+import com.smartalarm.widget.datepicker.OGDatePicker;
+
+import java.util.Date;
+
+/**
+ *
+ * Created by tl on 2018-04-17.
+ */
+
+public class BottomMenuBirthDay extends BaseBottomDialog {
+
+    private BottomMenuBirthDayListener mListener;
+    private OGDatePicker mDatePicker;
+    private long mTime;
+
+    public BottomMenuBirthDay() {
+        // Required empty public constructor
+        mTime = new Date().getTime();
+    }
+
+    public void seBirthDay(int year, int month, int day) {
+        if (null != mDatePicker) {
+            mDatePicker.setDate(year,month,day,false);
+        }
+    }
+
+    public void seBirthDay(long time) {
+        mTime = time;
+        if (null != mDatePicker) {
+            mDatePicker.setDate(time);
+        }
+    }
+
+    public void setBottomMenuBirthDayListener (BottomMenuBirthDayListener listener){
+        this.mListener = listener;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        setWindow();
+
+        View view = inflater.inflate(R.layout.set_birth_day_layout, container, false);
+        view.findViewById(R.id.tv_quite).setOnClickListener(this);
+        view.findViewById(R.id.tv_commit).setOnClickListener(this);
+        mDatePicker = view.findViewById(R.id.date_packer);
+        mDatePicker.setDate(mTime);
+        return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i(TAG, "onStart: ");
+        windowsLayout(200);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.tv_quite:
+                BottomMenuBirthDay.this.dismiss();
+                break;
+            case R.id.tv_commit:
+                int year = mDatePicker.getYear();
+                int month = mDatePicker.getMonth();
+                int day = mDatePicker.getDay();
+                if (mListener != null && CommonUtil.checkSelectedBirthDayIsValid(year, month, day)) {
+                    mListener.selectedBirthDay(year, month, day);
+                } else {
+                    ToastUtils.showLongToast(R.string.baby_info_birth_error);
+                }
+                BottomMenuBirthDay.this.dismiss();
+                break;
+        }
+    }
+
+    public interface BottomMenuBirthDayListener {
+        void selectedBirthDay(int year, int month, int day);
+    }
+}
+
+
+---------------------
+
+AlertDialog.Builder dialog = new AlertDialog.Builder(UnbindBankCardActivity.this, R.style.Dialog_FS);
+View view = View.inflate(UnbindBankCardActivity.this, R.layout.view_chakanshilitupian_alertdialog, null);
+final AlertDialog alertDialog = dialog.create();
+alertDialog.setView(view);
+alertDialog.show();
+
+/**
+ * 设置dialog宽度全屏
+ */
+WindowManager m = getWindowManager();
+Display d = m.getDefaultDisplay();  //为获取屏幕宽、高
+android.view.WindowManager.LayoutParams params = alertDialog.getWindow().getAttributes();  //获取对话框当前的参数值、
+params.width = (int) (d.getWidth());    //宽度设置全屏宽度
+alertDialog.getWindow().setAttributes(params);     //设置生效
+
+注意！！！！！！！！！！！
+以上设置并不能使dialog全屏，还要将dialog的style这样改将原来的? 
+<style name="Dialog_FS">
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowFrame">@null</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowIsFloating">true</item>
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    <item name="android:windowFullscreen">true</item>
+    <item name="android:backgroundDimEnabled">true</item>
+</style>
+
+---------------------
+

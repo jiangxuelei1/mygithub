@@ -1,0 +1,56 @@
+
+1、跑马灯
+------------------------------------------
+1.要实现跑马灯的TextView写法
+
+            <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            />12345678
+
+2.在代码中找到这个textView，然后textView.setSelected(true)，这步很关键；
+
+3.如果不是在ListView中的跑马灯效果，那么只需要在布局文件中配置就ok，代码如下：
+
+
+
+<item name="android:singleLine">true</item>  
+<item name="android:ellipsize">marquee</item>  
+<item name="android:focusable">true</item>  
+<item name="android:focusableInTouchMode">true</item>  
+<item name="android:marqueeRepeatLimit">marquee_forever</item> 
+
+------------------------------------------
+
+
+
+2、
+07-04 11:14:43.064: W/ResourceType(2411): No package identifier when getting value for resource number 0x0000001c
+07-04 11:14:43.064: W/System.err(2411): android.content.res.Resources$NotFoundException: String resource ID #0x1c
+
+错误位置示例代码：
+int percent = current * 100 / total;
+textView1.setText(percent);
+
+原因分析：
+
+主要原因是TextView的setText方法把传入的int类型的percent当做资源Id到项目中查询资源，而资源中却找不到相应的数值，就会报NotFoundException的错误。
+
+
+3、部分文字颜色、大小改变
+TextView tv=(TextView)findViewById(R.id.tv);
+String str="默认颜色<font color='#FF0000'><small>红颜色</small></font>";
+tv.setTextSize(18);
+tv.setText(Html.fromHtml(str));
+
+
+4、分享一个TextView的奇特属性，如果动态添加一个TextView，而不是通过静态的写死在xml文件里，设置TextColor时，如果color是一个selector，需要使用getColorStateList方法调用R.color文件，否则不会动态变色。参考代码：Button btn=(Button)findViewById(R.id.btn);  
+Resources resource=(Resources)getBaseContext().getResources();   
+ColorStateList csl=(ColorStateList)resource.getColorStateList(R.color.button_text);  
+if(csl!=null){  
+     btn.setTextColor(color_state_list);//设置按钮文字颜色  
+} 

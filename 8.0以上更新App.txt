@@ -1,0 +1,304 @@
+
+
+更新app时先申请存储权限
+
+    private var appUpdateManager: AppUpdateManager? = null
+	
+				appUpdateManager = AppUpdateManager(this@AppSetActivity)
+                appUpdateManager!!.setDownloadUrl(serverVersionUrl)
+                appUpdateManager!!.showDownloadDialog()
+				
+
+				
+				
+				
+package com.smartalarm.settings;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.Settings;
+import android.support.v4.content.FileProvider;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+import com.smartalarm.R;
+import com.smartalarm.tools.ToastUtils;
+import com.smartalarm.view.BaseDialog;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import static com.alibaba.sdk.android.ams.common.global.AmsGlobalHolder.getPackageName;
+
+/**
+ * Created by tl on 2018-04-09.
+ */
+public class AppUpdateManager {
+    /* 下载中 */
+    private static final int DOWNLOAD = 1;
+    /* 下载结束 */
+    private static final int DOWNLOAD_FINISH = 2;
+    /*下载路径*/
+    private String mDownLoadUrl;
+    /* 下载保存路径 */
+    private String mSavePath;
+    /* 记录进度条数量 */
+    private int progress;
+    /* 是否取消更新 */
+    private boolean cancelUpdate = false;
+
+    private Activity mContext;
+    /* 更新进度条 */
+    private ProgressBar mProgress;
+    private TextView mProgressText;
+    private Dialog mDownloadDialog;
+
+    private Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                // 正在下载
+                case DOWNLOAD:
+                    // 设置进度条位置
+                    mProgress.setProgress(progress);
+                    mProgressText.setText(progress + "%");
+                    break;
+                case DOWNLOAD_FINISH:
+                    // 安装文件
+                    installProcess();
+                    break;
+                default:
+                    break;
+            }
+        };
+    };
+
+    public AppUpdateManager(Activity context) {
+        this.mContext = context;
+    }
+
+    public void setDownloadUrl(String url){
+        this.mDownLoadUrl = url;
+    }
+
+    /**
+     * 显示软件下载对话框
+     */
+    public void showDownloadDialog() {
+        // 构造软件下载对话框
+        mDownloadDialog = new Dialog(mContext, R.style.ProgressDialog);
+        mDownloadDialog.setCancelable(false);
+        // 给下载对话框增加进度条
+        final LayoutInflater inflater = LayoutInflater.from(mContext);
+        View view = inflater.inflate(R.layout.app_dialog_download_layout, null);
+        mProgress = (ProgressBar) view.findViewById(R.id.softupdate_progress);
+        mProgressText = (TextView) view.findViewById(R.id.tv_progress);
+        Window dialogWindow = mDownloadDialog.getWindow();
+        // 取消更新
+        mDownloadDialog.show();
+        WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+        dialogWindow.setBackgroundDrawableResource(android.R.color.transparent);    // 必须设置
+        WindowManager.LayoutParams lp = dialogWindow.getAttributes();
+        lp.width = wm.getDefaultDisplay().getWidth(); // 宽度
+        lp.height = wm.getDefaultDisplay().getHeight(); // 高度
+        dialogWindow.setAttributes(lp);
+        dialogWindow.setContentView(view);
+
+        // 下载文件
+        downloadApk();
+    }
+
+    /**
+     * 下载apk文件
+     */
+    private void downloadApk() {
+        // 启动新线程下载软件
+        new downloadApkThread().start();
+    }
+
+    /**
+     * 下载文件线程
+     */
+    private class downloadApkThread extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                // 判断SD卡是否存在，并且是否具有读写权限
+                if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+                    // 获得存储卡的路径
+                    String sdpath = Environment.getExternalStorageDirectory() + "/";
+                    mSavePath = sdpath + "smartalarm_path";
+                    URL url = new URL(mDownLoadUrl);
+                    // 创建连接
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.connect();
+                    // 获取文件大小
+                    int length = conn.getContentLength();
+                    // 创建输入流
+                    InputStream is = conn.getInputStream();
+
+                    File file = new File(mSavePath);
+                    // 判断文件目录是否存在
+                    if (!file.exists()) {
+                        file.mkdir();
+                    }
+                    File apkFile = new File(mSavePath, "Smartalarm.apk");
+                    if (apkFile.exists()) {
+                        Log.i("hello", "apkFile.exists, delete");
+                        apkFile.delete();
+                    }
+                    FileOutputStream fos = new FileOutputStream(apkFile);
+                    int count = 0;
+                    // 缓存
+                    byte buf[] = new byte[1024];
+                    // 写入到文件中
+                    do {
+                        int numread = is.read(buf);
+                        count += numread;
+                        // 计算进度条位置
+                        progress = (int) (((float) count / length) * 100);
+                        // 更新进度
+                        mHandler.sendEmptyMessage(DOWNLOAD);
+                        if (numread <= 0) {
+                            // 下载完成
+                            mHandler.sendEmptyMessage(DOWNLOAD_FINISH);
+                            break;
+                        }
+                        // 写入文件
+                        fos.write(buf, 0, numread);
+                    } while (!cancelUpdate);// 点击取消就停止下载.
+                    fos.close();
+                    is.close();
+                }
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                ToastUtils.showLongToast(R.string.network_error);
+            } catch (IOException e) {
+                e.printStackTrace();
+                ToastUtils.showLongToast(R.string.network_error);
+            }
+            // 取消下载对话框显示
+            mDownloadDialog.dismiss();
+        }
+    }
+
+	//重点！！！
+	//安装前需要判断是否有安装未知来源应用的权限；
+	//如果没有权限，需要跳转到设置界面，让用户手动授予相关权限；
+	//此处的处理与常规的运行时权限不同，需要特别注意！
+    private void installProcess() {
+        boolean haveInstallPermission;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //先获取是否有安装未知来源应用的权限
+            haveInstallPermission = mContext.getPackageManager().canRequestPackageInstalls();
+            Log.i("hello", "haveInstallPermission = " + haveInstallPermission);
+            if (!haveInstallPermission) {//没有权限
+                new BaseDialog(mContext)
+                        .showTwoBtnDialog(R.string.notice, R.string.unknown_source_app)
+                        .setCancelOnClickListener()
+                        .setSureOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    Uri packageURI = Uri.parse("package:" + getPackageName());
+                                    Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, packageURI);
+                                    mContext.startActivityForResult(intent, AppSetActivity.REQUEST_CODE_UNKNOWN_APP);
+                                }
+                            }
+                        })
+                        .build()
+                        .show();
+                return;
+            }
+        }
+        //有权限，开始安装应用程序
+        installApk();
+    }
+
+    /**
+     * 安装APK文件
+     */
+    public void installApk() {
+        File apkfile;
+
+        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+            File external = Environment.getExternalStorageDirectory();
+            String rootDir = "/" + "smartalarm_path";
+            File cropFile = new File(external, rootDir);
+            if (!cropFile.exists()) {
+                cropFile.mkdir();
+            }
+            apkfile =  new File(cropFile, "Smartalarm.apk");
+            Log.i("hello", "apkfile = " + apkfile);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            //判断是否是AndroidN以及更高的版本
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+				//android7.0以上，访问内存需要通过provider
+                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Uri contentUri = FileProvider.getUriForFile(mContext, "com.smartalarm.provider", apkfile);
+                intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+            } else {
+                intent.setDataAndType(Uri.parse("file://" + apkfile.toString()), "application/vnd.android.package-archive");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            mContext.startActivity(intent);
+        }
+        // 通过Intent安装APK文件
+        /*Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setDataAndType(Uri.parse("file://" + apkfile.toString()), "application/vnd.android.package-archive");
+        mContext.startActivity(i);*/
+
+    }
+}
+
+
+
+package com.onego.watchapp.provider;
+
+import android.support.v4.content.FileProvider;
+
+/**
+ * Created by Administrator on 2018-04-11.
+ */
+
+public class GenericFileProvider extends FileProvider {
+
+}
+
+
+
+<provider
+            android:name=".provider.GenericFileProvider"
+            android:authorities="com.onego.watchapp.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+
+		
+/xml/filepaths
+
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path name="camera_pick" path="watchapp_path" />
+</paths>

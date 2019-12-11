@@ -1,0 +1,98 @@
+package com.onego.robot.wifi;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+import com.onego.robot.LogThread;
+import com.onego.robot.R;
+
+/**
+ *
+ * Created by jxl on 2016/5/28.
+ */
+public class PortalWifiActivity extends Activity {
+
+    public static final String TAG = "protal_wifi_activity";
+
+    private WebView view;
+
+    private String url = "http://www.onegohome.com/";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.protal_activity_layout);
+
+        view = (WebView) findViewById(R.id.show_protal_wifi);
+        setWeb();
+        view.loadUrl(url);
+    }
+
+    private void setWeb() {
+        final WebSettings webSettings = view.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setBuiltInZoomControls(true);
+        view.setVisibility(View.VISIBLE); // 加载完之后进行设置显示，以免加载时初始化效果不好看
+        //view.addJavascriptInterface(new InJavaScriptLocalObj(), "local_obj");
+        webSettings.setSupportZoom(true);
+        webSettings.setDomStorageEnabled(true);
+        //webSettings.setPluginsEnabled(true);
+        view.requestFocus();
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setSupportZoom(true);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        view.setWebViewClient(new WebViewClient() {//防重定向
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                String str = "url = " + url;
+                Log.i(TAG, str);
+                if (url.endsWith(".apk") || url.endsWith(".mp3") || url.endsWith(".zip")
+                        || url.endsWith(".rar") || url.endsWith(".mp4") || url.endsWith(".iso")
+                        || url.endsWith(".avi") || url.endsWith(".txt") || url.endsWith(".exe")
+                        || url.endsWith(".doc") || url.endsWith(".pdf") || url.endsWith(".rmvb")
+                        || url.endsWith(".wav") || url.endsWith(".flv") || url.endsWith(".ipa")) {
+                    //Toast.makeText(PortalWifiActivity.this, str, Toast.LENGTH_LONG).show();
+                    return true;
+                } else {
+                    return super.shouldOverrideUrlLoading(view, url);//跳转
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (null == view) {
+            view = (WebView) findViewById(R.id.show_protal_wifi);
+            setWeb();
+            /*LogThread.w("ping_task", TAG, "portalwifiactivity, webview is null", true);
+        } else {
+            boolean JavaScriptEnabled = view.getSettings().getJavaScriptEnabled();
+            LogThread.w("ping_task", TAG, "portalwifiactivity, webview not null, JavaScriptEnabled = " + JavaScriptEnabled, true);*/
+        }
+        view.loadUrl(url);
+    }
+
+    public void onClickBackBtn(View clickView) {
+        if (view.canGoBack()) {
+            Log.i(TAG, "onClickBackBtn");
+            view.goBack(); // goBack()表示返回WebView的上一页面
+        } else {
+            onClickCloseBtn(clickView);
+        }
+    }
+
+    public void onClickCloseBtn(View view) {
+        onBackPressed();
+    }
+}

@@ -1,0 +1,43 @@
+
+17位时间戳
+new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+
+北京时间的时间戳
+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINESE).format(new Date());
+
+
+时间戳与字符串相互转换
+private String getDayString(boolean isZero) {
+	Date date = new Date();
+	long time;
+	if (isZero) {
+		time = date.getTime() - AlarmManager.INTERVAL_DAY;
+	} else {
+		time = date.getTime();
+	}
+	return new SimpleDateFormat("yyyyMMdd", Locale.CHINESE).format(time);
+}
+
+private long getDateTime(String dayStr) {
+	SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd", Locale.CHINESE);
+	try {
+		return format.parse(dayStr).getTime();
+	} catch (ParseException e) {
+		e.printStackTrace();
+	}
+	return 0;
+}
+
+
+12小时制时间戳
+new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
+
+
+24小时制时间戳
+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+
+
+
+带AM/PM时间戳
+
+new SimpleDateFormat("yyyy-MM-dd a HH:mm:ss").format(new Date());

@@ -1,0 +1,50 @@
+
+java:
+public class SPUtils {
+
+    private static final String TAG = "SPUtils";
+
+    private static SPUtils mInstance;
+
+    private SPUtils() {
+    }
+
+    public static SPUtils getInstance() {
+        if (mInstance == null) {
+            synchronized (SPUtils.class) {
+                if (mInstance == null) {
+                    mInstance = new SPUtils();
+                }
+            }
+        }
+        return mInstance;
+    }
+}
+
+kotlin:
+
+class GeocodeSearchTool private constructor(private val context: Context): GeocodeSearch.OnGeocodeSearchListener {
+
+    private var geocodeSearch: GeocodeSearch
+    private var geoAddressSearchListener: OnGeoAddressSearchListener? = null
+    private var geoLatLngSearchListener: OnGeoLatLngSearchListener? = null
+
+    init {
+        geocodeSearch = GeocodeSearch(context)
+        geocodeSearch.setOnGeocodeSearchListener(this)
+    }
+
+    companion object {
+        private var instansce: GeocodeSearchTool? = null
+        fun getInstance(context: Context): GeocodeSearchTool? {
+            if (instansce == null) {
+                synchronized(GeocodeSearchTool::class.java) {
+                    if (instansce == null) {
+                        instansce = GeocodeSearchTool(context)
+                    }
+                }
+            }
+            return instansce
+        }
+    }
+}
